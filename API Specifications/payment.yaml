@@ -1,0 +1,234 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Tính Cước & Thanh toán
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.6 - Tính Cước & Thanh toán.
+    Bao gồm FR21 đến FR25 thuộc BR08 và BR09.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR21
+    description: Tính cước chuyến đi tự động
+  - name: FR22
+    description: Chọn phương thức thanh toán
+  - name: FR23
+    description: Xử lý thanh toán tiền mặt
+  - name: FR24
+    description: Xử lý thanh toán điện tử
+  - name: FR25
+    description: Xử lý giao dịch thanh toán thất bại
+
+paths:
+
+  # ============================================================
+  # FR21 - TÍNH CƯỚC CHUYẾN ĐI TỰ ĐỘNG
+  # ============================================================
+  /trips/{tripId}/fare:
+    post:
+      tags:
+        - FR21
+      summary: Tính cước chuyến đi tự động
+      description: |
+        Hệ thống tính số tiền phải trả dựa trên
+        loại dịch vụ và thông tin chuyến khi chuyến hoàn thành.
+      operationId: calculateFare
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tính cước thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuocChuyen'
+        '400':
+          description: Chuyến chưa hoàn thành
+
+  # ============================================================
+  # FR22 - CHỌN PHƯƠNG THỨC THANH TOÁN
+  # ============================================================
+  /trips/{tripId}/payment-method:
+    put:
+      tags:
+        - FR22
+      summary: Chọn phương thức thanh toán
+      description: |
+        Cho phép khách hàng chọn thanh toán
+        bằng tiền mặt hoặc điện tử.
+      operationId: selectPaymentMethod
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhuongThucThanhToan'
+      responses:
+        '200':
+          description: Chọn phương thức thanh toán thành công
+        '400':
+          description: Phương thức thanh toán không hợp lệ
+
+  # ============================================================
+  # FR23 - XỬ LÝ THANH TOÁN TIỀN MẶT
+  # ============================================================
+  /trips/{tripId}/payment/cash:
+    post:
+      tags:
+        - FR23
+      summary: Xử lý thanh toán tiền mặt
+      description: |
+        Cho phép tài xế xác nhận đã nhận tiền mặt
+        từ khách hàng.
+      operationId: processCashPayment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Đã xác nhận nhận tiền mặt
+        '400':
+          description: Thanh toán không hợp lệ
+
+  # ============================================================
+  # FR24 - XỬ LÝ THANH TOÁN ĐIỆN TỬ
+  # ============================================================
+  /trips/{tripId}/payment/electronic:
+    post:
+      tags:
+        - FR24
+      summary: Xử lý thanh toán điện tử
+      description: |
+        Hệ thống gọi API đối tác thanh toán để xử lý
+        giao dịch và không lưu dữ liệu thanh toán nhạy cảm.
+      operationId: processElectronicPayment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThanhToanDienTu'
+      responses:
+        '200':
+          description: Kết quả thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KetQuaThanhToan'
+        '502':
+          description: Đối tác thanh toán không phản hồi
+
+  # ============================================================
+  # FR25 - XỬ LÝ GIAO DỊCH THANH TOÁN THẤT BẠI
+  # ============================================================
+  /trips/{tripId}/payment/retry:
+    post:
+      tags:
+        - FR25
+      summary: Thử lại giao dịch thanh toán thất bại
+      description: |
+        Khi giao dịch điện tử thất bại, hệ thống
+        thông báo và cho phép khách hàng thử lại.
+      operationId: retryPayment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Đã tạo yêu cầu thử lại
+        '400':
+          description: Không thể thử lại giao dịch
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    CuocChuyen:
+      type: object
+      properties:
+        maChuyen:
+          type: integer
+          example: 10001
+        soTien:
+          type: number
+          format: double
+          example: 85000
+        donViTien:
+          type: string
+          example: VND
+
+    PhuongThucThanhToan:
+      type: object
+      required:
+        - phuongThuc
+      properties:
+        phuongThuc:
+          type: string
+          enum:
+            - TIEN_MAT
+            - DIEN_TU
+          example: DIEN_TU
+
+    ThanhToanDienTu:
+      type: object
+      required:
+        - maPhuongThucThanhToan
+      properties:
+        maPhuongThucThanhToan:
+          type: string
+          example: PMT-001
+
+    KetQuaThanhToan:
+      type: object
+      properties:
+        maGiaoDich:
+          type: string
+          example: TXN-10001
+        trangThai:
+          type: string
+          enum:
+            - THANH_CONG
+            - THAT_BAI
+            - DANG_XU_LY
+          example: THANH_CONG
