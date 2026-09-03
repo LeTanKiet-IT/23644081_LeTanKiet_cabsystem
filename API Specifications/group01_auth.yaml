@@ -1,1 +1,445 @@
+openapi: 3.0.3
 
+info:
+  title: CAB System API - Nhóm Tài khoản & Xác thực
+  version: 1.0.0
+  description: |
+    API đặc tả nhóm Tài khoản & Xác thực của CAB System.
+    Bao gồm FR01 đến FR05.
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  # ============================================================
+  # 7.1 NHÓM TÀI KHOẢN & XÁC THỰC
+  # ============================================================
+
+  - name: FR01
+    description: Đăng ký tài khoản khách hàng
+
+  - name: FR02
+    description: Khởi tạo tài khoản tài xế
+
+  - name: FR03
+    description: Đăng nhập hệ thống
+
+  - name: FR04
+    description: Cập nhật thông tin cá nhân
+
+  - name: FR05
+    description: Xác thực trước khi dùng chức năng cần tài khoản
+
+
+paths:
+
+  # ============================================================
+  # FR01 - ĐĂNG KÝ TÀI KHOẢN KHÁCH HÀNG
+  # ============================================================
+
+  /auth/register/customer:
+    post:
+      tags:
+        - FR01
+      summary: Đăng ký tài khoản khách hàng
+      description: |
+        Cho phép người dùng mới tạo tài khoản khách hàng
+        với họ tên, số điện thoại/email và mật khẩu.
+      operationId: registerCustomer
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DangKyKhachHang'
+
+      responses:
+        '201':
+          description: Đăng ký tài khoản thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+        '400':
+          description: Dữ liệu đăng ký không hợp lệ
+
+        '409':
+          description: Số điện thoại hoặc email đã tồn tại
+
+
+  # ============================================================
+  # FR02 - KHỞI TẠO TÀI KHOẢN TÀI XẾ
+  # ============================================================
+
+  /auth/register/driver:
+    post:
+      tags:
+        - FR02
+      summary: Khởi tạo tài khoản tài xế
+      description: |
+        Cho phép tài xế tự đăng ký tài khoản hoặc
+        nhân viên vận hành tạo tài khoản cho tài xế.
+      operationId: registerDriver
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KhoiTaoTaiKhoanTaiXe'
+
+      responses:
+        '201':
+          description: Khởi tạo tài khoản tài xế thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+        '400':
+          description: Dữ liệu tài khoản không hợp lệ
+
+        '409':
+          description: Số điện thoại hoặc email đã tồn tại
+
+
+  # ============================================================
+  # FR03 - ĐĂNG NHẬP HỆ THỐNG
+  # ============================================================
+
+  /auth/login:
+    post:
+      tags:
+        - FR03
+      summary: Đăng nhập hệ thống
+      description: |
+        Xác thực thông tin đăng nhập của người dùng
+        trước khi cấp quyền truy cập hệ thống.
+      operationId: login
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DangNhap'
+
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+        '400':
+          description: Thông tin đăng nhập không hợp lệ
+
+        '401':
+          description: Sai tên đăng nhập hoặc mật khẩu
+
+        '403':
+          description: Tài khoản bị khóa hoặc không hoạt động
+
+
+  # ============================================================
+  # FR04 - CẬP NHẬT THÔNG TIN CÁ NHÂN
+  # ============================================================
+
+  /users/profile:
+    put:
+      tags:
+        - FR04
+      summary: Cập nhật thông tin cá nhân
+      description: |
+        Cho phép khách hàng hoặc tài xế cập nhật
+        thông tin cá nhân của chính mình.
+      operationId: updateProfile
+
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapNhatThongTinCaNhan'
+
+      responses:
+        '200':
+          description: Cập nhật thông tin cá nhân thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+        '400':
+          description: Dữ liệu cập nhật không hợp lệ
+
+        '401':
+          description: Chưa đăng nhập
+
+        '404':
+          description: Không tìm thấy người dùng
+
+
+  # ============================================================
+  # FR05 - XÁC THỰC TRƯỚC KHI DÙNG CHỨC NĂNG CẦN TÀI KHOẢN
+  # ============================================================
+
+  /auth/verify:
+    get:
+      tags:
+        - FR05
+      summary: Xác thực người dùng
+      description: |
+        Kiểm tra người dùng đã đăng nhập trước khi
+        cho phép sử dụng các chức năng yêu cầu tài khoản.
+      operationId: verifyAuthentication
+
+      security:
+        - BearerAuth: []
+
+      responses:
+        '200':
+          description: Người dùng đã được xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUser'
+
+        '401':
+          description: Chưa đăng nhập hoặc token không hợp lệ
+
+        '403':
+          description: Không có quyền thực hiện chức năng
+
+
+# ============================================================
+# COMPONENTS
+# ============================================================
+
+components:
+
+  # ==========================================================
+  # SECURITY
+  # ==========================================================
+
+  securitySchemes:
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+  # ==========================================================
+  # SCHEMAS
+  # ==========================================================
+
+  schemas:
+
+    # ----------------------------------------------------------
+    # FR01 - ĐĂNG KÝ KHÁCH HÀNG
+    # ----------------------------------------------------------
+
+    DangKyKhachHang:
+      type: object
+      required:
+        - hoTen
+        - soDienThoai
+        - matKhau
+      properties:
+
+        hoTen:
+          type: string
+          description: Họ và tên khách hàng
+          example: Nguyễn Văn A
+
+        soDienThoai:
+          type: string
+          description: Số điện thoại khách hàng
+          example: "0901234567"
+
+        email:
+          type: string
+          format: email
+          description: Email khách hàng
+          example: nguyenvana@gmail.com
+
+        matKhau:
+          type: string
+          format: password
+          minLength: 6
+          description: Mật khẩu tài khoản
+          example: "12345678"
+
+
+    # ----------------------------------------------------------
+    # FR02 - TÀI KHOẢN TÀI XẾ
+    # ----------------------------------------------------------
+
+    KhoiTaoTaiKhoanTaiXe:
+      type: object
+      required:
+        - hoTen
+        - soDienThoai
+        - matKhau
+      properties:
+
+        hoTen:
+          type: string
+          description: Họ và tên tài xế
+          example: Trần Văn B
+
+        soDienThoai:
+          type: string
+          description: Số điện thoại tài xế
+          example: "0912345678"
+
+        email:
+          type: string
+          format: email
+          description: Email tài xế
+          example: tranvanb@gmail.com
+
+        matKhau:
+          type: string
+          format: password
+          minLength: 6
+          description: Mật khẩu tài khoản
+          example: "12345678"
+
+
+    # ----------------------------------------------------------
+    # FR03 - ĐĂNG NHẬP
+    # ----------------------------------------------------------
+
+    DangNhap:
+      type: object
+      required:
+        - taiKhoan
+        - matKhau
+      properties:
+
+        taiKhoan:
+          type: string
+          description: Số điện thoại hoặc email đăng nhập
+          example: nguyenvana@gmail.com
+
+        matKhau:
+          type: string
+          format: password
+          description: Mật khẩu
+          example: "12345678"
+
+
+    # ----------------------------------------------------------
+    # FR04 - CẬP NHẬT THÔNG TIN CÁ NHÂN
+    # ----------------------------------------------------------
+
+    CapNhatThongTinCaNhan:
+      type: object
+      properties:
+
+        hoTen:
+          type: string
+          description: Họ và tên
+          example: Nguyễn Văn A
+
+        soDienThoai:
+          type: string
+          description: Số điện thoại
+          example: "0901234567"
+
+        email:
+          type: string
+          format: email
+          description: Email
+          example: nguyenvana@gmail.com
+
+
+    # ----------------------------------------------------------
+    # THÔNG TIN NGƯỜI DÙNG
+    # ----------------------------------------------------------
+
+    UserProfile:
+      type: object
+      properties:
+
+        idNguoiDung:
+          type: integer
+          example: 1
+
+        hoTen:
+          type: string
+          example: Nguyễn Văn A
+
+        soDienThoai:
+          type: string
+          example: "0901234567"
+
+        email:
+          type: string
+          example: nguyenvana@gmail.com
+
+        vaiTro:
+          type: string
+          enum:
+            - KHACH_HANG
+            - TAI_XE
+            - NHAN_VIEN_VAN_HANH
+            - QUAN_TRI_VIEN
+          example: KHACH_HANG
+
+
+    # ----------------------------------------------------------
+    # AUTH RESPONSE
+    # ----------------------------------------------------------
+
+    AuthResponse:
+      type: object
+      properties:
+
+        message:
+          type: string
+          example: Thao tác thành công
+
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+
+    # ----------------------------------------------------------
+    # THÔNG TIN XÁC THỰC
+    # ----------------------------------------------------------
+
+    AuthUser:
+      type: object
+      properties:
+
+        idNguoiDung:
+          type: integer
+          example: 1
+
+        hoTen:
+          type: string
+          example: Nguyễn Văn A
+
+        vaiTro:
+          type: string
+          example: KHACH_HANG
+
+        trangThai:
+          type: string
+          enum:
+            - HOAT_DONG
+            - BI_KHOA
+            - KHONG_HOAT_DONG
+          example: HOAT_DONG
