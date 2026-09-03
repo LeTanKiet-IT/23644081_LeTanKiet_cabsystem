@@ -1,0 +1,293 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Quản trị Vận hành
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.9 - Quản trị Vận hành.
+    Bao gồm FR31 đến FR36 thuộc BR12, BR13 và BR14.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR31
+    description: Quản lý thông tin khách hàng
+  - name: FR32
+    description: Quản lý thông tin tài xế & phương tiện
+  - name: FR33
+    description: Xem danh sách chuyến đang diễn ra
+  - name: FR34
+    description: Tra cứu lịch sử giao dịch
+  - name: FR35
+    description: Xử lý chuyến gặp sự cố
+  - name: FR36
+    description: Phân quyền chức năng quản trị
+
+paths:
+
+  # ============================================================
+  # FR31 - QUẢN LÝ THÔNG TIN KHÁCH HÀNG
+  # ============================================================
+  /operations/customers:
+    get:
+      tags:
+        - FR31
+      summary: Xem danh sách khách hàng
+      description: |
+        Cho phép nhân viên vận hành xem
+        thông tin khách hàng.
+      operationId: getCustomers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách khách hàng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KhachHang'
+        '403':
+          description: Không có quyền
+
+    put:
+      tags:
+        - FR31
+      summary: Chỉnh sửa thông tin khách hàng
+      description: |
+        Cho phép nhân viên vận hành chỉnh sửa
+        thông tin khách hàng.
+      operationId: updateCustomer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KhachHang'
+      responses:
+        '200':
+          description: Cập nhật thành công
+        '403':
+          description: Không có quyền
+
+  # ============================================================
+  # FR32 - QUẢN LÝ THÔNG TIN TÀI XẾ & PHƯƠNG TIỆN
+  # ============================================================
+  /operations/drivers:
+    get:
+      tags:
+        - FR32
+      summary: Xem thông tin tài xế và phương tiện
+      description: |
+        Cho phép nhân viên vận hành xem
+        thông tin tài xế và phương tiện.
+      operationId: getDrivers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaiXe'
+        '403':
+          description: Không có quyền
+
+    put:
+      tags:
+        - FR32
+      summary: Chỉnh sửa thông tin tài xế và phương tiện
+      operationId: updateDriver
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaiXe'
+      responses:
+        '200':
+          description: Cập nhật thành công
+        '403':
+          description: Không có quyền
+
+  # ============================================================
+  # FR33 - XEM DANH SÁCH CHUYẾN ĐANG DIỄN RA
+  # ============================================================
+  /operations/trips/ongoing:
+    get:
+      tags:
+        - FR33
+      summary: Xem danh sách chuyến đang diễn ra
+      description: |
+        Hiển thị các chuyến đang thực hiện
+        theo thời gian thực cho nhân viên vận hành.
+      operationId: getOngoingTrips
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách chuyến đang thực hiện
+        '403':
+          description: Không có quyền
+
+  # ============================================================
+  # FR34 - TRA CỨU LỊCH SỬ GIAO DỊCH
+  # ============================================================
+  /operations/transactions/history:
+    get:
+      tags:
+        - FR34
+      summary: Tra cứu lịch sử giao dịch
+      description: |
+        Cho phép nhân viên vận hành tìm kiếm
+        và xem lịch sử chuyến/giao dịch.
+      operationId: getTransactionHistory
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Kết quả tra cứu lịch sử giao dịch
+        '403':
+          description: Không có quyền
+
+  # ============================================================
+  # FR35 - XỬ LÝ CHUYẾN GẶP SỰ CỐ
+  # ============================================================
+  /operations/trips/{tripId}/incident:
+    post:
+      tags:
+        - FR35
+      summary: Xử lý chuyến gặp sự cố
+      description: |
+        Cho phép nhân viên vận hành can thiệp
+        vào chuyến bị lỗi hoặc bất thường.
+      operationId: handleTripIncident
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuCo'
+      responses:
+        '200':
+          description: Đã xử lý sự cố
+        '403':
+          description: Không có quyền can thiệp
+        '404':
+          description: Không tìm thấy chuyến
+
+  # ============================================================
+  # FR36 - PHÂN QUYỀN CHỨC NĂNG QUẢN TRỊ
+  # ============================================================
+  /operations/roles/permissions:
+    put:
+      tags:
+        - FR36
+      summary: Phân quyền chức năng quản trị
+      description: |
+        Hệ thống giới hạn các thao tác nhạy cảm
+        chỉ dành cho tài khoản có quyền phù hợp.
+      operationId: updatePermissions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhanQuyen'
+      responses:
+        '200':
+          description: Cập nhật quyền thành công
+        '403':
+          description: Không có quyền quản trị
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    KhachHang:
+      type: object
+      properties:
+        idKhachHang:
+          type: integer
+          example: 1
+        hoTen:
+          type: string
+          example: Nguyễn Văn A
+        soDienThoai:
+          type: string
+          example: "0901234567"
+        email:
+          type: string
+          format: email
+          example: nguyenvana@gmail.com
+
+    TaiXe:
+      type: object
+      properties:
+        idTaiXe:
+          type: integer
+          example: 10
+        hoTen:
+          type: string
+          example: Trần Văn B
+        soDienThoai:
+          type: string
+          example: "0912345678"
+        bienSoXe:
+          type: string
+          example: 59A-123.45
+
+    SuCo:
+      type: object
+      required:
+        - loaiSuCo
+        - noiDung
+      properties:
+        loaiSuCo:
+          type: string
+          example: KHACH_HANG_BAO_SU_CO
+        noiDung:
+          type: string
+          example: Khách hàng báo tài xế đi sai tuyến
+        hanhDong:
+          type: string
+          example: LIEN_HE_TAI_XE
+
+    PhanQuyen:
+      type: object
+      required:
+        - vaiTro
+        - chucNang
+      properties:
+        vaiTro:
+          type: string
+          example: NHAN_VIEN_VAN_HANH
+        chucNang:
+          type: array
+          items:
+            type: string
