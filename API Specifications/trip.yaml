@@ -1,0 +1,166 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Thực hiện Chuyến đi
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.5 - Thực hiện Chuyến đi.
+    Bao gồm FR18 đến FR20 thuộc BR06.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR18
+    description: Cập nhật trạng thái chuyến
+  - name: FR19
+    description: Theo dõi trạng thái chuyến theo thời gian thực
+  - name: FR20
+    description: Ước tính thời gian tài xế đến
+
+paths:
+
+  # ============================================================
+  # FR18 - CẬP NHẬT TRẠNG THÁI CHUYẾN (TÀI XẾ)
+  # ============================================================
+  /trips/{tripId}/status:
+    put:
+      tags:
+        - FR18
+      summary: Cập nhật trạng thái chuyến
+      description: |
+        Cho phép tài xế cập nhật các mốc:
+        đã đến điểm đón, đã đón khách,
+        đang di chuyển và hoàn thành chuyến.
+      operationId: updateTripStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrangThaiChuyen'
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+        '400':
+          description: Chuyển trạng thái không hợp lệ
+        '404':
+          description: Không tìm thấy chuyến
+
+  # ============================================================
+  # FR19 - THEO DÕI TRẠNG THÁI CHUYẾN THEO THỜI GIAN THỰC
+  # ============================================================
+  /trips/{tripId}/tracking:
+    get:
+      tags:
+        - FR19
+      summary: Theo dõi trạng thái chuyến theo thời gian thực
+      description: |
+        Hệ thống hiển thị trạng thái chuyến được
+        cập nhật liên tục cho khách hàng.
+      operationId: trackTrip
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thông tin theo dõi chuyến
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TheoDoiChuyen'
+        '404':
+          description: Không tìm thấy chuyến
+
+  # ============================================================
+  # FR20 - ƯỚC TÍNH THỜI GIAN TÀI XẾ ĐẾN (ETA)
+  # ============================================================
+  /trips/{tripId}/eta:
+    get:
+      tags:
+        - FR20
+      summary: Ước tính thời gian tài xế đến
+      description: |
+        Hệ thống tính và hiển thị thời gian dự kiến
+        tài xế đến điểm đón.
+      operationId: calculateETA
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ETA của tài xế
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ETA'
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    TrangThaiChuyen:
+      type: object
+      required:
+        - trangThai
+      properties:
+        trangThai:
+          type: string
+          enum:
+            - DA_DEN_DIEM_DON
+            - DA_DON_KHACH
+            - DANG_DI_CHUYEN
+            - HOAN_THANH
+          example: DA_DEN_DIEM_DON
+
+    TheoDoiChuyen:
+      type: object
+      properties:
+        maChuyen:
+          type: integer
+          example: 10001
+        trangThai:
+          type: string
+          example: DANG_DI_CHUYEN
+        viDo:
+          type: number
+          format: double
+          example: 10.7769
+        kinhDo:
+          type: number
+          format: double
+          example: 106.7009
+
+    ETA:
+      type: object
+      properties:
+        maChuyen:
+          type: integer
+          example: 10001
+        phutDuKien:
+          type: integer
+          example: 5
