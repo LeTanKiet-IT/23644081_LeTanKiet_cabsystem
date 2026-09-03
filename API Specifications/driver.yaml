@@ -1,0 +1,400 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Tìm & Quản lý Tài xế
+  version: 1.0.0
+  description: |
+    API đặc tả:
+    - Nhóm 7.3 - Tìm & Phân công Tài xế: FR09 đến FR13
+    - Nhóm 7.4 - Hồ sơ & Trạng thái Tài xế: FR14 đến FR17
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR09
+    description: Xác định danh sách tài xế phù hợp
+  - name: FR10
+    description: Gửi yêu cầu chuyến theo thứ tự ưu tiên
+  - name: FR11
+    description: Xử lý từ chối/hết thời gian phản hồi
+  - name: FR12
+    description: Thông báo không tìm được tài xế
+  - name: FR13
+    description: Ghi nhận & cập nhật vị trí tài xế
+  - name: FR14
+    description: Cập nhật hồ sơ & phương tiện tài xế
+  - name: FR15
+    description: Chuyển đổi trạng thái sẵn sàng
+  - name: FR16
+    description: Nhận thông báo chuyến mới
+  - name: FR17
+    description: Chấp nhận/từ chối chuyến
+
+paths:
+
+  # ============================================================
+  # FR09 - XÁC ĐỊNH DANH SÁCH TÀI XẾ PHÙ HỢP
+  # ============================================================
+  /driver-matching/{tripId}/candidates:
+    get:
+      tags:
+        - FR09
+      summary: Xác định danh sách tài xế phù hợp
+      description: |
+        Hệ thống lọc tài xế theo vị trí gần nhất
+        và trạng thái sẵn sàng nhận chuyến.
+      operationId: findSuitableDrivers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Danh sách tài xế phù hợp
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaiXePhuHop'
+        '404':
+          description: Không tìm thấy tài xế phù hợp
+
+  # ============================================================
+  # FR10 - GỬI YÊU CẦU CHUYẾN CHO TÀI XẾ THEO THỨ TỰ ƯU TIÊN
+  # ============================================================
+  /driver-matching/{tripId}/requests:
+    post:
+      tags:
+        - FR10
+      summary: Gửi yêu cầu chuyến cho tài xế theo thứ tự ưu tiên
+      description: |
+        Hệ thống gửi yêu cầu tuần tự cho từng tài xế
+        theo tiêu chí ưu tiên.
+      operationId: sendTripRequest
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GanTaiXe'
+      responses:
+        '200':
+          description: Đã gửi yêu cầu cho tài xế
+        '404':
+          description: Không còn tài xế phù hợp
+
+  # ============================================================
+  # FR11 - XỬ LÝ TỪ CHỐI/HẾT THỜI GIAN PHẢN HỒI
+  # ============================================================
+  /driver-matching/{tripId}/response:
+    post:
+      tags:
+        - FR11
+      summary: Xử lý từ chối hoặc hết thời gian phản hồi
+      description: |
+        Khi tài xế từ chối hoặc không phản hồi trong
+        thời gian quy định, hệ thống chuyển sang tài xế kế tiếp.
+      operationId: handleDriverResponse
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhanHoiTaiXe'
+      responses:
+        '200':
+          description: Đã xử lý phản hồi
+        '400':
+          description: Phản hồi không hợp lệ
+
+  # ============================================================
+  # FR12 - THÔNG BÁO KHÔNG TÌM ĐƯỢC TÀI XẾ
+  # ============================================================
+  /driver-matching/{tripId}/no-driver:
+    post:
+      tags:
+        - FR12
+      summary: Thông báo không tìm được tài xế
+      description: |
+        Khi không còn tài xế phù hợp, hệ thống thông báo
+        rõ ràng cho khách hàng.
+      operationId: notifyNoDriver
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Đã thông báo cho khách hàng
+        '404':
+          description: Không tìm thấy chuyến
+
+  # ============================================================
+  # FR13 - GHI NHẬN & CẬP NHẬT VỊ TRÍ TÀI XẾ
+  # ============================================================
+  /drivers/location:
+    put:
+      tags:
+        - FR13
+      summary: Ghi nhận và cập nhật vị trí tài xế
+      description: |
+        Hệ thống lưu vị trí tài xế định kỳ để phục vụ
+        việc tìm tài xế gần khách hàng.
+      operationId: updateDriverLocation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapNhatViTri'
+      responses:
+        '200':
+          description: Cập nhật vị trí thành công
+        '400':
+          description: Tọa độ không hợp lệ
+
+  # ============================================================
+  # FR14 - CẬP NHẬT HỒ SƠ & PHƯƠNG TIỆN TÀI XẾ
+  # ============================================================
+  /drivers/profile:
+    put:
+      tags:
+        - FR14
+      summary: Cập nhật hồ sơ và phương tiện tài xế
+      description: |
+        Cho phép tài xế cập nhật thông tin cá nhân
+        và thông tin phương tiện.
+      operationId: updateDriverProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoSoTaiXe'
+      responses:
+        '200':
+          description: Cập nhật hồ sơ thành công
+        '400':
+          description: Dữ liệu không hợp lệ
+
+  # ============================================================
+  # FR15 - CHUYỂN ĐỔI TRẠNG THÁI SẴN SÀNG
+  # ============================================================
+  /drivers/availability:
+    put:
+      tags:
+        - FR15
+      summary: Chuyển đổi trạng thái sẵn sàng
+      description: |
+        Cho phép tài xế bật hoặc tắt trạng thái
+        sẵn sàng nhận chuyến.
+      operationId: updateDriverAvailability
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrangThaiSanSang'
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+        '400':
+          description: Trạng thái không hợp lệ
+
+  # ============================================================
+  # FR16 - NHẬN THÔNG BÁO CHUYẾN MỚI
+  # ============================================================
+  /drivers/notifications:
+    get:
+      tags:
+        - FR16
+      summary: Nhận thông báo chuyến mới
+      description: |
+        Hệ thống gửi thông báo chuyến mới đến
+        tài xế được chọn.
+      operationId: getDriverNotifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách thông báo chuyến mới
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ThongBao'
+
+  # ============================================================
+  # FR17 - CHẤP NHẬN/TỪ CHỐI CHUYẾN
+  # ============================================================
+  /trips/{tripId}/driver-response:
+    post:
+      tags:
+        - FR17
+      summary: Chấp nhận hoặc từ chối chuyến
+      description: |
+        Cho phép tài xế phản hồi chấp nhận hoặc
+        từ chối yêu cầu chuyến.
+      operationId: driverTripResponse
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhanHoiTaiXe'
+      responses:
+        '200':
+          description: Đã ghi nhận phản hồi
+        '400':
+          description: Phản hồi không hợp lệ
+        '409':
+          description: Chuyến đã được tài xế khác nhận
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    TaiXePhuHop:
+      type: object
+      properties:
+        maTaiXe:
+          type: integer
+          example: 10
+        hoTen:
+          type: string
+          example: Trần Văn B
+        khoangCach:
+          type: number
+          format: double
+          example: 1.2
+        sanSang:
+          type: boolean
+          example: true
+
+    GanTaiXe:
+      type: object
+      required:
+        - maTaiXe
+      properties:
+        maTaiXe:
+          type: integer
+          example: 10
+        thuTuUuTien:
+          type: integer
+          example: 1
+
+    PhanHoiTaiXe:
+      type: object
+      required:
+        - phanHoi
+      properties:
+        phanHoi:
+          type: string
+          enum:
+            - CHAP_NHAN
+            - TU_CHOI
+            - HET_THOI_GIAN
+          example: CHAP_NHAN
+
+    CapNhatViTri:
+      type: object
+      required:
+        - viDo
+        - kinhDo
+      properties:
+        viDo:
+          type: number
+          format: double
+          example: 10.7769
+        kinhDo:
+          type: number
+          format: double
+          example: 106.7009
+
+    HoSoTaiXe:
+      type: object
+      properties:
+        hoTen:
+          type: string
+          example: Trần Văn B
+        soDienThoai:
+          type: string
+          example: "0912345678"
+        email:
+          type: string
+          format: email
+        bienSoXe:
+          type: string
+          example: 59A-123.45
+        loaiXe:
+          type: string
+          example: CAB 4 chỗ
+
+    TrangThaiSanSang:
+      type: object
+      required:
+        - sanSang
+      properties:
+        sanSang:
+          type: boolean
+          example: true
+
+    ThongBao:
+      type: object
+      properties:
+        maThongBao:
+          type: integer
+          example: 501
+        maChuyen:
+          type: integer
+          example: 10001
+        noiDung:
+          type: string
+          example: Có yêu cầu chuyến mới
