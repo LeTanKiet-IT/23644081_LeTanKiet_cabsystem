@@ -1,0 +1,137 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Thông báo
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.7 - Thông báo.
+    Bao gồm FR26 đến FR28 thuộc BR10.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR26
+    description: Gửi thông báo cho khách hàng
+  - name: FR27
+    description: Gửi thông báo cho tài xế
+  - name: FR28
+    description: Kiến trúc thông báo mở rộng được
+
+paths:
+
+  # ============================================================
+  # FR26 - GỬI THÔNG BÁO CHO KHÁCH HÀNG
+  # ============================================================
+  /notifications/customer:
+    post:
+      tags:
+        - FR26
+      summary: Gửi thông báo cho khách hàng
+      description: |
+        Hệ thống gửi thông báo tại các mốc:
+        tiếp nhận yêu cầu, có tài xế, tài xế đến,
+        hoàn thành chuyến và kết quả thanh toán.
+      operationId: notifyCustomer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuiThongBao'
+      responses:
+        '202':
+          description: Đã tiếp nhận yêu cầu gửi thông báo
+        '400':
+          description: Dữ liệu thông báo không hợp lệ
+
+  # ============================================================
+  # FR27 - GỬI THÔNG BÁO CHO TÀI XẾ
+  # ============================================================
+  /notifications/driver:
+    post:
+      tags:
+        - FR27
+      summary: Gửi thông báo cho tài xế
+      description: |
+        Hệ thống gửi thông báo về chuyến mới
+        hoặc thay đổi liên quan đến chuyến đang thực hiện.
+      operationId: notifyDriver
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuiThongBao'
+      responses:
+        '202':
+          description: Đã tiếp nhận yêu cầu gửi thông báo
+        '400':
+          description: Dữ liệu thông báo không hợp lệ
+
+  # ============================================================
+  # FR28 - KIẾN TRÚC THÔNG BÁO MỞ RỘNG ĐƯỢC
+  # ============================================================
+  /notifications/channels:
+    get:
+      tags:
+        - FR28
+      summary: Xem các kênh thông báo hỗ trợ
+      description: |
+        Cho phép hệ thống hỗ trợ và mở rộng nhiều
+        kênh thông báo như Push Notification, SMS, Email.
+      operationId: getNotificationChannels
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách các kênh thông báo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - PUSH
+                    - SMS
+                    - EMAIL
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    GuiThongBao:
+      type: object
+      required:
+        - nguoiNhan
+        - noiDung
+        - kenh
+      properties:
+        nguoiNhan:
+          type: integer
+          example: 1
+        maChuyen:
+          type: integer
+          example: 10001
+        noiDung:
+          type: string
+          example: Đã tìm thấy tài xế cho chuyến đi
+        kenh:
+          type: array
+          items:
+            type: string
+            enum:
+              - PUSH
+              - SMS
+              - EMAIL
