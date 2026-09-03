@@ -1,0 +1,255 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Nhóm Đặt Chuyến
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm Đặt Chuyến của CAB System.
+    Bao gồm FR06, FR07 và FR08 theo BR02.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR06
+    description: Nhập điểm đón & điểm đến
+
+  - name: FR07
+    description: Chọn loại xe/dịch vụ
+
+  - name: FR08
+    description: Gửi yêu cầu đặt chuyến
+
+paths:
+
+  /trips/location:
+    post:
+      tags:
+        - FR06
+      summary: Nhập điểm đón và điểm đến
+      description: |
+        Cho phép khách hàng nhập hoặc chọn điểm đón
+        và điểm đến trên bản đồ.
+      operationId: nhapDiemDonDiemDen
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiemDonDiemDen'
+
+      responses:
+        '200':
+          description: Nhập điểm đón và điểm đến thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiemDonDiemDen'
+
+        '400':
+          description: Điểm đón hoặc điểm đến không hợp lệ
+
+        '401':
+          description: Người dùng chưa đăng nhập
+
+
+  /trips/service:
+    post:
+      tags:
+        - FR07
+      summary: Chọn loại xe hoặc dịch vụ
+      description: |
+        Cho phép khách hàng chọn loại xe hoặc dịch vụ
+        mong muốn trước khi gửi yêu cầu đặt chuyến.
+      operationId: chonLoaiXeDichVu
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoaiXeDichVu'
+
+      responses:
+        '200':
+          description: Chọn loại xe hoặc dịch vụ thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoaiXeDichVu'
+
+        '400':
+          description: Loại xe hoặc dịch vụ không hợp lệ
+
+        '401':
+          description: Người dùng chưa đăng nhập
+
+
+  /trips:
+    post:
+      tags:
+        - FR08
+      summary: Gửi yêu cầu đặt chuyến
+      description: |
+        Hệ thống tiếp nhận và xác nhận yêu cầu đặt chuyến.
+        Nếu yêu cầu hợp lệ, hệ thống khởi tạo bản ghi chuyến
+        với trạng thái "Đang tìm tài xế".
+      operationId: guiYeuCauDatChuyen
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YeuCauDatChuyen'
+
+      responses:
+        '201':
+          description: Tạo yêu cầu đặt chuyến thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chuyen'
+
+        '400':
+          description: Yêu cầu đặt chuyến không hợp lệ
+
+        '401':
+          description: Người dùng chưa đăng nhập
+
+        '409':
+          description: Không thể tạo chuyến tại thời điểm hiện tại
+
+
+components:
+
+  securitySchemes:
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+  schemas:
+
+    DiemDonDiemDen:
+      type: object
+      required:
+        - diemDon
+        - diemDen
+      properties:
+
+        diemDon:
+          $ref: '#/components/schemas/DiaDiem'
+
+        diemDen:
+          $ref: '#/components/schemas/DiaDiem'
+
+
+    DiaDiem:
+      type: object
+      required:
+        - diaChi
+        - viDo
+        - kinhDo
+      properties:
+
+        diaChi:
+          type: string
+          description: Địa chỉ điểm đón hoặc điểm đến
+          example: 12 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh
+
+        viDo:
+          type: number
+          format: double
+          description: Vĩ độ
+          example: 10.7769
+
+        kinhDo:
+          type: number
+          format: double
+          description: Kinh độ
+          example: 106.7009
+
+
+    LoaiXeDichVu:
+      type: object
+      required:
+        - maDichVu
+      properties:
+
+        maDichVu:
+          type: integer
+          description: Mã loại xe hoặc dịch vụ
+          example: 1
+
+        tenDichVu:
+          type: string
+          description: Tên loại xe hoặc dịch vụ
+          example: CAB 4 chỗ
+
+
+    YeuCauDatChuyen:
+      type: object
+      required:
+        - diemDon
+        - diemDen
+        - maDichVu
+      properties:
+
+        diemDon:
+          $ref: '#/components/schemas/DiaDiem'
+
+        diemDen:
+          $ref: '#/components/schemas/DiaDiem'
+
+        maDichVu:
+          type: integer
+          description: Mã loại xe hoặc dịch vụ khách hàng lựa chọn
+          example: 1
+
+
+    Chuyen:
+      type: object
+      properties:
+
+        maChuyen:
+          type: integer
+          description: Mã chuyến
+          example: 10001
+
+        maKhachHang:
+          type: integer
+          description: Mã khách hàng
+          example: 1
+
+        diemDon:
+          $ref: '#/components/schemas/DiaDiem'
+
+        diemDen:
+          $ref: '#/components/schemas/DiaDiem'
+
+        maDichVu:
+          type: integer
+          description: Mã loại xe hoặc dịch vụ
+          example: 1
+
+        trangThai:
+          type: string
+          description: Trạng thái chuyến
+          enum:
+            - DANG_TIM_TAI_XE
+            - DA_CO_TAI_XE
+            - DA_DEN_DIEM_DON
+            - DANG_DI_CHUYEN
+            - HOAN_THANH
+            - DA_HUY
+          example: DANG_TIM_TAI_XE
