@@ -1,0 +1,120 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Lịch sử & Đánh giá
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.8 - Lịch sử & Đánh giá.
+    Bao gồm FR29 và FR30 thuộc BR11.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR29
+    description: Xem lịch sử chuyến đi
+  - name: FR30
+    description: Đánh giá tài xế
+
+paths:
+
+  # ============================================================
+  # FR29 - XEM LỊCH SỬ CHUYẾN ĐI
+  # ============================================================
+  /trips/history:
+    get:
+      tags:
+        - FR29
+      summary: Xem lịch sử chuyến đi
+      description: |
+        Cho phép khách hàng xem lại danh sách các chuyến
+        đã thực hiện kèm số tiền đã thanh toán.
+      operationId: getTripHistory
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách chuyến đã thực hiện
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LichSuChuyen'
+        '401':
+          description: Chưa đăng nhập
+
+  # ============================================================
+  # FR30 - ĐÁNH GIÁ TÀI XẾ
+  # ============================================================
+  /trips/{tripId}/rating:
+    post:
+      tags:
+        - FR30
+      summary: Đánh giá tài xế
+      description: |
+        Cho phép khách hàng đánh giá tài xế
+        sau khi chuyến hoàn thành.
+      operationId: rateDriver
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DanhGia'
+      responses:
+        '201':
+          description: Đánh giá thành công
+        '400':
+          description: Chuyến chưa hoàn thành hoặc dữ liệu không hợp lệ
+        '409':
+          description: Chuyến đã được đánh giá
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    LichSuChuyen:
+      type: object
+      properties:
+        maChuyen:
+          type: integer
+          example: 10001
+        thoiGian:
+          type: string
+          format: date-time
+        soTienDaThanhToan:
+          type: number
+          format: double
+          example: 85000
+        trangThai:
+          type: string
+          example: HOAN_THANH
+
+    DanhGia:
+      type: object
+      required:
+        - diem
+      properties:
+        diem:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        binhLuan:
+          type: string
+          example: Tài xế phục vụ tốt.
