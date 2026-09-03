@@ -1,0 +1,183 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Báo cáo
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.10 - Báo cáo.
+    Bao gồm FR37 đến FR39 thuộc BR15.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR37
+    description: Báo cáo số lượng chuyến & doanh thu
+  - name: FR38
+    description: Báo cáo tỷ lệ hoàn thành/hủy chuyến
+  - name: FR39
+    description: Báo cáo hiệu quả hoạt động tài xế
+
+paths:
+
+  # ============================================================
+  # FR37 - BÁO CÁO SỐ LƯỢNG CHUYẾN & DOANH THU
+  # ============================================================
+  /reports/trips-revenue:
+    get:
+      tags:
+        - FR37
+      summary: Báo cáo số lượng chuyến và doanh thu
+      description: |
+        Hệ thống tổng hợp và hiển thị số chuyến,
+        doanh thu theo khoảng thời gian.
+      operationId: getTripsRevenueReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TuNgay'
+        - $ref: '#/components/parameters/DenNgay'
+      responses:
+        '200':
+          description: Báo cáo chuyến và doanh thu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaoCaoChuyenDoanhThu'
+
+  # ============================================================
+  # FR38 - BÁO CÁO TỶ LỆ HOÀN THÀNH/HỦY CHUYẾN
+  # ============================================================
+  /reports/completion-cancellation:
+    get:
+      tags:
+        - FR38
+      summary: Báo cáo tỷ lệ hoàn thành và hủy chuyến
+      description: |
+        Hệ thống tính và hiển thị tỷ lệ chuyến
+        hoàn thành và tỷ lệ chuyến bị hủy.
+      operationId: getCompletionCancellationReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TuNgay'
+        - $ref: '#/components/parameters/DenNgay'
+      responses:
+        '200':
+          description: Báo cáo tỷ lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaoCaoTyLe'
+
+  # ============================================================
+  # FR39 - BÁO CÁO HIỆU QUẢ HOẠT ĐỘNG TÀI XẾ
+  # ============================================================
+  /reports/drivers-performance:
+    get:
+      tags:
+        - FR39
+      summary: Báo cáo hiệu quả hoạt động tài xế
+      description: |
+        Hệ thống tổng hợp số liệu hiệu quả
+        theo từng tài xế.
+      operationId: getDriversPerformanceReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TuNgay'
+        - $ref: '#/components/parameters/DenNgay'
+      responses:
+        '200':
+          description: Báo cáo theo tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HieuQuaTaiXe'
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+
+    TuNgay:
+      name: tuNgay
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      example: 2026-09-01
+
+    DenNgay:
+      name: denNgay
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      example: 2026-09-30
+
+  schemas:
+
+    BaoCaoChuyenDoanhThu:
+      type: object
+      properties:
+        tongSoChuyen:
+          type: integer
+          example: 1250
+        tongDoanhThu:
+          type: number
+          format: double
+          example: 125000000
+
+    BaoCaoTyLe:
+      type: object
+      properties:
+        tongSoChuyen:
+          type: integer
+          example: 1250
+        soChuyenHoanThanh:
+          type: integer
+          example: 1100
+        soChuyenHuy:
+          type: integer
+          example: 150
+        tyLeHoanThanh:
+          type: number
+          format: double
+          example: 88
+        tyLeHuy:
+          type: number
+          format: double
+          example: 12
+
+    HieuQuaTaiXe:
+      type: object
+      properties:
+        maTaiXe:
+          type: integer
+          example: 10
+        hoTen:
+          type: string
+          example: Trần Văn B
+        tongSoChuyen:
+          type: integer
+          example: 120
+        soChuyenHoanThanh:
+          type: integer
+          example: 110
+        soChuyenHuy:
+          type: integer
+          example: 10
+        tyLeHoanThanh:
+          type: number
+          format: double
+          example: 91.67
