@@ -1,0 +1,156 @@
+openapi: 3.0.3
+
+info:
+  title: CAB System API - Bảo mật & Audit
+  version: 1.0.0
+  description: |
+    API đặc tả Nhóm 7.11 - Bảo mật & Audit.
+    Bao gồm FR40 và FR41 thuộc BR16 và BR17.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: FR40
+    description: Kiểm soát quyền truy cập theo vai trò
+  - name: FR41
+    description: Ghi vết thao tác (Audit Log)
+
+paths:
+
+  # ============================================================
+  # FR40 - KIỂM SOÁT QUYỀN TRUY CẬP THEO VAI TRÒ
+  # ============================================================
+  /authorization/check:
+    post:
+      tags:
+        - FR40
+      summary: Kiểm soát quyền truy cập theo vai trò
+      description: |
+        Hệ thống giới hạn chức năng hiển thị và thao tác
+        theo vai trò của người dùng.
+      operationId: checkAuthorization
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KiemTraQuyen'
+      responses:
+        '200':
+          description: Kết quả kiểm tra quyền
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KetQuaQuyen'
+        '401':
+          description: Chưa đăng nhập
+        '403':
+          description: Không có quyền
+
+  # ============================================================
+  # FR41 - GHI VẾT THAO TÁC (AUDIT LOG)
+  # ============================================================
+  /audit-logs:
+    post:
+      tags:
+        - FR41
+      summary: Ghi vết thao tác
+      description: |
+        Hệ thống ghi lại thời gian, người thực hiện
+        và nội dung của các thao tác quan trọng.
+      operationId: createAuditLog
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditLog'
+      responses:
+        '201':
+          description: Ghi audit log thành công
+        '400':
+          description: Dữ liệu audit log không hợp lệ
+
+    get:
+      tags:
+        - FR41
+      summary: Tra cứu audit log
+      description: |
+        Cho phép người dùng có quyền tra cứu
+        các thao tác đã được ghi nhận.
+      operationId: getAuditLogs
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách audit log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+        '403':
+          description: Không có quyền
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    KiemTraQuyen:
+      type: object
+      required:
+        - chucNang
+      properties:
+        chucNang:
+          type: string
+          example: QUAN_LY_TAI_XE
+
+    KetQuaQuyen:
+      type: object
+      properties:
+        duocPhep:
+          type: boolean
+          example: true
+        vaiTro:
+          type: string
+          example: QUAN_TRI_VIEN
+
+    AuditLog:
+      type: object
+      required:
+        - hanhDong
+        - doiTuong
+      properties:
+        idAuditLog:
+          type: integer
+          example: 1001
+        thoiGian:
+          type: string
+          format: date-time
+        nguoiThucHien:
+          type: integer
+          example: 5
+        hanhDong:
+          type: string
+          example: CAP_NHAT_TAI_XE
+        doiTuong:
+          type: string
+          example: TAI_XE
+        doiTuongId:
+          type: integer
+          example: 10
+        noiDung:
+          type: string
+          example: Cập nhật thông tin phương tiện tài xế
